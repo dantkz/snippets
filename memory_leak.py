@@ -8,15 +8,18 @@ with tf.device("/gpu:0"):
     
     cur_x = np.reshape(np.random.randn(data_num).astype(np.float32), [data_num, 1])
     
-    x_floor = tf.floor(x)
+    x_floor = tf.cast(x, dtype=tf.int32)
+    x_floor_f = tf.floor(x)
+
     x_ceil = x_floor + 1
+    x_ceil_f = x_floor_f + 1
     
-    x_uniques, x_indices = tf.unique(tf.reshape(tf.concat([x_floor, x_ceil], axis=0), [-1]), out_idx=tf.int64)
+    x_uniques, x_indices = tf.unique(tf.reshape(tf.concat([x_floor, x_ceil], axis=0), [-1]), out_idx=tf.int32)
     
     x_minus = x_uniques-1
     x_plus = x_uniques+1
     
-    _, u_indices = tf.unique(tf.reshape(tf.concat([x_uniques, x_minus, x_plus], axis=0), [-1]), out_idx=tf.int64)
+    _, u_indices = tf.unique(tf.reshape(tf.concat([x_uniques, x_minus, x_plus], axis=0), [-1]), out_idx=tf.int32)
     
     u3_indices = tf.reshape(u_indices, [3,-1])
     
@@ -28,7 +31,7 @@ with tf.device("/gpu:0"):
     x_indices = tf.reshape(x_indices, [-1, 1])
     bins_shape = [tf.reduce_max(u_indices)+1, 1]
     
-    bins = tf.scatter_nd(x_indices, tf.concat([x-x_floor, x_ceil-x], axis=0), bins_shape)
+    bins = tf.scatter_nd(x_indices, tf.concat([x-x_floor_f, x_ceil_f-x], axis=0), bins_shape)
     
     x_uminus_indices = tf.reshape(x_uminus_indices, [-1, 1])
     x_uplus_indices = tf.reshape(x_uplus_indices, [-1, 1])
@@ -47,7 +50,8 @@ with tf.device("/gpu:0"):
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
     
-    for i in range(1000):
+    sess.graph.finalize()
+    for i in range(3000):
         bins_np, cost_np, grad_np = sess.run([bins, cost, grad], feed_dict={x: cur_x})
     
     print(bins_np)
