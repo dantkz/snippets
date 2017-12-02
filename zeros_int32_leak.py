@@ -8,7 +8,7 @@ import numpy as np
 def parse_args(args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('--max_epochs', type=int, default=10000)
-    parser.add_argument('--output_size', type=int, default=6)
+    parser.add_argument('--output_size', type=int, default=128)
     parser.add_argument('--device', type=str, default="gpu:0")
     return parser.parse_args(args=args)
 
@@ -21,7 +21,7 @@ def get_random_shape(output_size):
 
 def create_model_zeros(output_size):
     shape = get_random_shape(output_size)
-    return tf.zeros(shape, dtype=tf.int32)
+    return tf.zeros(shape, dtype=tf.float32)
 
 def create_model_zeros_cast(output_size):
     shape = get_random_shape(output_size)
@@ -38,6 +38,21 @@ def create_model_scatter(output_size):
     updates = tf.convert_to_tensor([0], dtype=tf.float32)
     result = tf.scatter_nd(indices, updates, [outer_shape])
     return tf.reshape(result, shape)
+
+def create_model_range(output_size):
+    shape = get_random_shape(output_size)
+    outer_shape = tf.reduce_prod(shape)
+    result = tf.cast(tf.range(tf.cast(outer_shape, dtype=tf.int64), dtype=tf.int64), dtype=tf.int32)
+    result = tf.reshape(result, shape)
+    return result
+
+def create_model_tile(output_size):
+    shape = get_random_shape(output_size)
+    outer_shape = tf.cast(tf.reduce_prod(shape[:-1]), dtype=tf.float32)
+    result = tf.range(outer_shape, dtype=tf.float32)
+    result = tf.tile(result, [output_size])
+    result = tf.reshape(result, shape)
+    return result
 
 def create_model_where(output_size):
     shape = get_random_shape(output_size)
@@ -75,7 +90,9 @@ def main():
         #op = create_model_zeros_np(args.output_size)
         #op = create_model_scatter(args.output_size)
         #op = create_model_where(args.output_size)
-        op = create_model_unique(args.output_size)
+        #op = create_model_unique(args.output_size)
+        #op = create_model_range(args.output_size)
+        op = create_model_tile(args.output_size)
 
         session.run(tf.global_variables_initializer())
         session.graph.finalize()
