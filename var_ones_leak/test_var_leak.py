@@ -12,7 +12,8 @@ if __name__=='__main__':
         ones_list.append(tf.constant(np.ones([size_max, size_max, size_max], dtype=np.float32), dtype=tf.float32, name='tf.constant'))
         ones_list.append(tf.ones([size_max, size_max, size_max], dtype=tf.float32, name='tf.ones'))
         ones_list.append(tf.convert_to_tensor(np.ones([size_max, size_max, size_max], dtype=np.float32), dtype=tf.float32, name='tf.convert_to_tensor'))
-        ones_list.append(tf.get_variable('tf.get_variable', dtype=tf.float32, initializer=ones_list[0], trainable=False))
+        ones_list.append(tf.get_variable('tf.get_variable', dtype=tf.float32, initializer=np.ones([size_max, size_max, size_max], dtype=np.float32), trainable=False))
+
 
         versions = []
         for ones in ones_list:

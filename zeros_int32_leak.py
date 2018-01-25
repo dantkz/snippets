@@ -8,7 +8,7 @@ import numpy as np
 def parse_args(args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('--max_epochs', type=int, default=10000)
-    parser.add_argument('--output_size', type=int, default=128)
+    parser.add_argument('--output_size', type=int, default=32)
     parser.add_argument('--device', type=str, default="gpu:0")
     return parser.parse_args(args=args)
 
@@ -41,16 +41,18 @@ def create_model_scatter(output_size):
 
 def create_model_range(output_size):
     shape = get_random_shape(output_size)
-    outer_shape = tf.reduce_prod(shape)
-    result = tf.cast(tf.range(tf.cast(outer_shape, dtype=tf.int64), dtype=tf.int64), dtype=tf.int32)
+    outer_shape = tf.cast(tf.reduce_prod(shape), dtype=tf.int64)
+    #result = tf.cast(tf.range(tf.cast(outer_shape, dtype=tf.int64), dtype=tf.int64), dtype=tf.int32)
+    result = tf.cast(tf.range(outer_shape, dtype=tf.int64), dtype=tf.int32)
     result = tf.reshape(result, shape)
     return result
 
 def create_model_tile(output_size):
     shape = get_random_shape(output_size)
-    outer_shape = tf.cast(tf.reduce_prod(shape[:-1]), dtype=tf.float32)
-    result = tf.range(outer_shape, dtype=tf.float32)
+    outer_shape = tf.cast(tf.reduce_prod(shape[:-1]), dtype=tf.int32)
+    result = tf.range(outer_shape, dtype=tf.int32)
     result = tf.tile(result, [output_size])
+    result = tf.cast(result, dtype=tf.int32)
     result = tf.reshape(result, shape)
     return result
 
@@ -67,20 +69,22 @@ def create_model_unique(output_size):
     inp = tf.cast(100*tf.random_normal(shape), dtype=tf.int32)
     inp = tf.reshape(inp, [-1, output_size])
     idx_shift = 2**8
-    max_dim = inp.get_shape().as_list()[1]
-    _, idx = tf.unique(inp[:,0], out_idx=tf.int64)
-    for j in range(1, max_dim-1):
+    with tf.device("/cpu:0"):
+        max_dim = inp.get_shape().as_list()[1]
+        _, idx = tf.unique(inp[:,0], out_idx=tf.int64)
+        for j in range(1, max_dim-1):
+            vals = idx*idx_shift + tf.cast(inp[:,j], dtype=tf.int64)
+            _, idx = tf.unique(vals, out_idx=tf.int64)
+        j = max_dim-1
         vals = idx*idx_shift + tf.cast(inp[:,j], dtype=tf.int64)
-        _, idx = tf.unique(vals, out_idx=tf.int64)
-    j = max_dim-1
-    vals = idx*idx_shift + tf.cast(inp[:,j], dtype=tf.int64)
-    uvals, result = tf.unique(vals, out_idx=tf.int32)
+        uvals, result = tf.unique(vals, out_idx=tf.int64)
+    result = tf.cast(result, dtype=tf.int32)
     result = tf.reshape(result, tf.concat([shape[:-1], [-1]], axis=0))
     return result
 
 def main():
     args = parse_args()
-    session_conf = tf.ConfigProto(allow_soft_placement=True)
+    session_conf = tf.ConfigProto(allow_soft_placement=False)
     np.random.seed(1234)
     process = psutil.Process(getpid())
 
@@ -89,10 +93,10 @@ def main():
         #op = create_model_zeros_cast(args.output_size)
         #op = create_model_zeros_np(args.output_size)
         #op = create_model_scatter(args.output_size)
-        #op = create_model_where(args.output_size)
+        op = create_model_where(args.output_size)
         #op = create_model_unique(args.output_size)
         #op = create_model_range(args.output_size)
-        op = create_model_tile(args.output_size)
+        #op = create_model_tile(args.output_size)
 
         session.run(tf.global_variables_initializer())
         session.graph.finalize()
