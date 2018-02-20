@@ -24,13 +24,6 @@ ukeys_sum = tf.reduce_sum(ukeys)
 
 grad = tf.gradients(ukeys_sum, tf_trg_i)
 
-#for j in range(self.d1):
-#    updates =  self.blur_kernel[0]*tf.gather_nd(self.values, self.neibs0)
-#    updates += self.blur_kernel[1]*tf.gather_nd(self.values, self.neibs[1+j*2+0])
-#    updates += self.blur_kernel[2]*tf.gather_nd(self.values, self.neibs[1+j*2+1])
-#    self.values += tf.scatter_nd(self.neibs0, updates, self.values_shape)
-
-
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 

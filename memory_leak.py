@@ -1,12 +1,11 @@
 import tensorflow as tf
 import numpy as np
 
+data_num = 2**10
+#data_num = 16
+
 with tf.device("/gpu:0"):
-    #data_num = 2**16
-    data_num = 16
     x = tf.placeholder(dtype=tf.float32, shape=[data_num, 1])
-    
-    cur_x = np.reshape(np.random.randn(data_num).astype(np.float32), [data_num, 1])
     
     x_floor_f = tf.floor(x)
     x_ceil_f = x_floor_f + 1
@@ -50,7 +49,8 @@ sess = tf.Session(config=tf.ConfigProto(log_device_placement=False, allow_soft_p
 sess.run(tf.global_variables_initializer())
 sess.graph.finalize()
 
-for i in range(3000):
+for i in range(30):
+    cur_x = np.reshape(np.random.randn(data_num).astype(np.float32), [data_num, 1])
     bins_np, cost_np, grad_np = sess.run([bins, cost, grad], feed_dict={x: cur_x})
 
 print(bins_np)
